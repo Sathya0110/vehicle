@@ -7,8 +7,8 @@ st.title("🚦 AI Traffic Monitoring System")
 
 st.write("Upload a road image to detect and count vehicles.")
 
-# Load YOLO model
-model = YOLO("yolov8n.pt")
+# Load better accuracy model
+model = YOLO("yolov8m.pt")
 
 uploaded_file = st.file_uploader("Upload Traffic Image", type=["jpg","jpeg","png"])
 
@@ -19,25 +19,46 @@ if uploaded_file is not None:
 
     st.image(image, caption="Uploaded Image", use_column_width=True)
 
-    # Vehicle classes
-    vehicle_classes = [2, 3, 5, 7]
+    # Detect vehicles with confidence filtering
+    results = model(img, classes=[2,3,5,7], conf=0.5)
 
-    results = model(img, classes=vehicle_classes)
+    annotated_frame = results[0].plot()
 
-    annotated = results[0].plot()
+    st.image(annotated_frame, caption="Detected Vehicles", channels="BGR")
 
     boxes = results[0].boxes
+    classes = boxes.cls.cpu().numpy() if boxes is not None else []
 
-    vehicle_count = len(boxes)
+    car = 0
+    motorcycle = 0
+    bus = 0
+    truck = 0
 
-    st.image(annotated, caption="Detected Vehicles", channels="BGR")
+    for c in classes:
+        if int(c) == 2:
+            car += 1
+        elif int(c) == 3:
+            motorcycle += 1
+        elif int(c) == 5:
+            bus += 1
+        elif int(c) == 7:
+            truck += 1
 
-    st.subheader(f"🚗 Total Vehicles Detected: {vehicle_count}")
+    total = car + motorcycle + bus + truck
 
-    # Traffic density estimation
-    if vehicle_count <= 3:
+    st.subheader("🚗 Vehicle Count")
+
+    st.write(f"Cars: {car}")
+    st.write(f"Motorcycles: {motorcycle}")
+    st.write(f"Buses: {bus}")
+    st.write(f"Trucks: {truck}")
+
+    st.subheader(f"🚘 Total Vehicles: {total}")
+
+    # Traffic level estimation
+    if total <= 3:
         st.success("Traffic Level: LOW")
-    elif vehicle_count <= 7:
+    elif total <= 7:
         st.warning("Traffic Level: MEDIUM")
     else:
         st.error("Traffic Level: HIGH")
