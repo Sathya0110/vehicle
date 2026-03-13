@@ -3,14 +3,14 @@ from ultralytics import YOLO
 from PIL import Image
 import numpy as np
 
-st.title("🚗 Vehicle Detection using YOLOv8")
+st.title("🚦 AI Traffic Monitoring System")
 
-st.write("Upload an image containing vehicles.")
+st.write("Upload a road image to detect and count vehicles.")
 
-# Load model
+# Load YOLO model
 model = YOLO("yolov8n.pt")
 
-uploaded_file = st.file_uploader("Upload Image", type=["jpg","jpeg","png"])
+uploaded_file = st.file_uploader("Upload Traffic Image", type=["jpg","jpeg","png"])
 
 if uploaded_file is not None:
 
@@ -19,14 +19,25 @@ if uploaded_file is not None:
 
     st.image(image, caption="Uploaded Image", use_column_width=True)
 
-    st.write("Detecting vehicles...")
+    # Vehicle classes
+    vehicle_classes = [2, 3, 5, 7]
 
-    # Detect only vehicle classes
-    results = model(img, classes=[2,3,5,7])
+    results = model(img, classes=vehicle_classes)
 
-    annotated_frame = results[0].plot()
+    annotated = results[0].plot()
 
-    st.image(annotated_frame, caption="Detected Vehicles", channels="BGR")
+    boxes = results[0].boxes
 
-    if len(results[0].boxes) == 0:
-        st.warning("No vehicles detected in this image.")
+    vehicle_count = len(boxes)
+
+    st.image(annotated, caption="Detected Vehicles", channels="BGR")
+
+    st.subheader(f"🚗 Total Vehicles Detected: {vehicle_count}")
+
+    # Traffic density estimation
+    if vehicle_count <= 3:
+        st.success("Traffic Level: LOW")
+    elif vehicle_count <= 7:
+        st.warning("Traffic Level: MEDIUM")
+    else:
+        st.error("Traffic Level: HIGH")
